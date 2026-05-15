@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>OllamaBridge Cockpit</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;font-family:system-ui,sans-serif}
+body{background:#0d1117;color:#c9d1d9}
+nav{display:flex;gap:1px;background:#21262d;padding:0}
+nav button{flex:1;border:none;background:#21262d;color:#8b949e;padding:12px;cursor:pointer;font-size:13px}
+nav button.active{background:#238636;color:#fff}
+.panel{display:none;padding:20px;max-width:1400px;margin:0 auto}
+.panel.active{display:block}
+table{width:100%;border-collapse:collapse;margin-top:10px;font-size:13px}
+th,td{text-align:left;padding:8px 12px;border-bottom:1px solid #30363d}
+th{color:#8b949e;font-weight:500}
+.status{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:6px}
+.status.running{background:#238636}
+.status.stopped{background:#f85149}
+.status.loading{background:#d29922}
+button.action{background:#238636;color:#fff;border:none;padding:4px 12px;border-radius:4px;cursor:pointer;font-size:12px}
+button.action:disabled{background:#30363d;cursor:not-allowed}
+button.danger{background:#f85149}
+.metric{background:#161b22;padding:15px;border-radius:6px;margin-bottom:10px}
+.metric h3{font-size:11px;color:#8b949e;margin-bottom:5px;text-transform:uppercase;letter-spacing:0.5px}
+.metric .value{font-size:22px;font-weight:600}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px}
+textarea{width:100%;background:#161b22;border:1px solid #30363d;color:#c9d1d9;padding:10px;border-radius:4px;min-height:100px;font-family:monospace;font-size:13px}
+select{width:100%;background:#161b22;border:1px solid #30363d;color:#c9d1d9;padding:8px;border-radius:4px;margin-bottom:10px}
+.log-line{font-family:monospace;font-size:11px;padding:2px 0;border-bottom:1px solid #21262d;white-space:pre-wrap;word-break:break-all}
+.log-ERR{color:#f85149}
+.log-WRN{color:#d29922}
+.log-INF{color:#58a6ff}
+.log-DBG{color:#8b949e}
+h2{font-size:16px;margin-bottom:15px;color:#e6edf3}
+pre{background:#161b22;padding:10px;border-radius:4px;overflow-x:auto;font-size:12px}
+#play-metrics{margin-top:10px;font-size:12px;color:#8b949e}
+#play-output{margin-top:10px;background:#161b22;padding:10px;min-height:100px;white-space:pre-wrap;word-break:break-word;font-size:13px;line-height:1.5}
+.config-editor{min-height:500px}
+.small{font-size:11px;color:#8b949e}
+</style>
+</head>
+<body>
+<nav>
+  <button class="active" onclick="show('dashboard')">Dashboard</button>
+  <button onclick="show('models')">Models</button>
+  <button onclick="show('backends')">Backends</button>
+  <button onclick="show('playground')">Playground</button>
+  <button onclick="show('logs')">Logs</button>
+  <button onclick="show('metrics')">Metrics</button>
+  <button onclick="show('config')">Config</button>
+</nav>
+
+<div id="dashboard" class="panel active">
+  <h2>Dashboard</h2>
+  <div class="grid">
+    <div class="metric"><h3>Bridge</h3><div class="value" id="d-bridge">...</div></div>
+    <div class="metric"><h3>Ollama Native</h3><div class="value" id="d-ollama">...</div></div>
+    <div class="metric"><h3>Backends Running</h3><div class="value" id="d-backends">0/0</div></div>
+    <div class="metric"><h3>Bridge RAM</h3><div class="value" id="d-ram">-</div></div>
+  </div>
+</div>
+
+<div id="models" class="panel">
+  <h2>Models</h2>
+  <table>
+    <thead><tr><th>Model</th><th>Backend</th><th>Device</th><th>Status</th><th>PID</th><th>Uptime</th><th>RAM</th><th>Actions</th></tr></thead>
+    <tbody id="m-body"></tbody>
+  </table>
+</div>
+
+<div id="backends" class="panel">
+  <h2>Backends</h2>
+  <table>
+    <thead><tr><th>ID</th><th>Port</th><th>Runtime</th><th>Status</th><th>Restarts</th><th>Actions</th></tr></thead>
+    <tbody id="b-body"></tbody>
+  </table>
+</div>
+
+<div id="playground" class="panel">
+  <h2>Playground</h2>
+  <select id="p-model"></select>
+  <textarea id="p-prompt" placeholder="Prompt..."></textarea>
+  <button class="action" onclick="send()">Send</button>
+  <div id="play-metrics"></div>
+  <div id="play-output"></div>
+</div>
+
+<div id="logs" class="panel">
+  <h2>Logs <span class="small">(live)</span></h2>
+  <div id="l-body" style="max-height:600px;overflow-y:auto;background:#161b22;padding:10px;border-radius:4px;"></div>
+</div>
+
+<div id="metrics" class="panel">
+  <h2>Metrics</h2>
+  <table>
+    <thead><tr><th>Time</th><th>Req</th><th>Model</th><th>Backend</th><th>Device</th><th>TTFT</th><th>Tok/s</th><th>RAM</th><th>Ms</th></tr></thead>
+    <tbody id="mt-body"></tbody>
+  </table>
+</div>
+
+<div id="config" class="panel">
+  <h2>Config</h2>
+  <textarea id="c-json" class="config-editor"></textarea>
+  <button class="action" onclick="saveConfig()">Save & Reload</button>
+  <button onclick="validateConfig()">Validate</button>
+  <div id="c-error" style="color:#f85149;margin-top:10px;"></div>
+</div>
+
+<script>
+const API='/admin';
+let refreshInterval;
+
+function show(id){
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('nav button').forEach(b=>b.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  event.target.classList.add('active');
+  if(refreshInterval)clearInterval(refreshInterval);
+  if(id==='dashboard'){loadDash();refreshInterval=setInterval(loadDash,3000);}
+  if(id==='models'){loadModels();refreshInterval=setInterval(loadModels,5000);}
+  if(id==='backends'){loadBackends();refreshInterval=setInterval(loadBackends,5000);}
+  if(id==='logs'){loadLogs();refreshInterval=setInterval(loadLogs,2000);}
+  if(id==='metrics'){loadMetrics();}
+  if(id==='config')loadConfig();
+}
+
+async function loadDash(){
+  const r=await fetch(`${API}/status`);const d=await r.json();
+  document.getElementById('d-bridge').innerHTML='<span class="status running"></span>online';
+  document.getElementById('d-ollama').innerHTML=`<span class="status ${d.ollamaNative?'running':'stopped'}"></span>${d.ollamaNative?'online':'offline'}`;
+  document.getElementById('d-backends').textContent=`${d.backends.filter(b=>b.running).length}/${d.backends.length}`;
+  document.getElementById('d-ram').textContent=`${d.ramUsed} MB`;
+}
+
+async function loadModels(){
+  const r=await fetch(`${API}/models`);const models=await r.json();
+  const tbody=document.getElementById('m-body');
+  tbody.innerHTML=models.map(m=>`
+    <tr>
+      <td>${m.name}</td>
+      <td>${m.backend}</td>
+      <td>${m.device}${m.fallbackDevice?'<br><span class="small">fallback: '+m.fallbackDevice+'</span>':''}</td>
+      <td><span class="status ${m.status}"></span>${m.status}</td>
+      <td>${m.pid||'-'}</td>
+      <td>${m.uptime||'-'}</td>
+      <td>${m.ramUsed?m.ramUsed+' MB':'-'}</td>
+      <td>
+        <button class="action" onclick="testModel('${m.name}')" ${m.status!=='running'?'disabled':''}>Test</button>
+        <button class="action ${m.status==='running'?'danger':''}" onclick="toggleModel('${m.name}')">${m.status==='running'?'Stop':'Start'}</button>
+      </td>
+    </tr>
+  `).join('');
+  const sel=document.getElementById('p-model');
+  if(sel.children.length===0){
+    models.forEach(m=>{const o=document.createElement('option');o.value=m.name;o.textContent=m.name;sel.appendChild(o);});
+  }
+}
+
+async function testModel(name){
+  const btn=event.target;btn.disabled=true;btn.textContent='Testing...';
+  const r=await fetch(`${API}/models/${name}/test`,{method:'POST'});
+  const d=await r.json();
+  btn.textContent=`Test (${d.ttft}ms, ${d.tokS.toFixed(1)}tok/s)`;
+  setTimeout(()=>{btn.textContent='Test';btn.disabled=false;},3000);
+}
+
+async function toggleModel(name){
+  await fetch(`${API}/models/${name}/toggle`,{method:'POST'});
+  loadModels();
+}
+
+async function loadBackends(){
+  const r=await fetch(`${API}/backends`);const b=await r.json();
+  document.getElementById('b-body').innerHTML=b.map(x=>`
+    <tr>
+      <td>${x.id}</td>
+      <td>${x.port}</td>
+      <td>${x.runtimeVersion||'-'}</td>
+      <td><span class="status ${x.running?'running':'stopped'}"></span>${x.running?'running':'stopped'}</td>
+      <td>${x.restartCount}</td>
+      <td>
+        <button class="action" onclick="backendAction('${x.id}','start')" ${x.running?'disabled':''}>Start</button>
+        <button class="action danger" onclick="backendAction('${x.id}','stop')" ${!x.running?'disabled':''}>Stop</button>
+        <button class="action" onclick="backendAction('${x.id}','restart')">Restart</button>
+      </td>
+    </tr>
+  `).join('');
+}
+
+async function backendAction(id,action){
+  await fetch(`${API}/backends/${id}/${action}`,{method:'POST'});
+  loadBackends();
+}
+
+async function send(){
+  const model=document.getElementById('p-model').value;
+  const prompt=document.getElementById('p-prompt').value;
+  const out=document.getElementById('play-output');
+  const met=document.getElementById('play-metrics');
+  out.textContent='';met.textContent='Sending...';
+  const t0=performance.now();
+  const r=await fetch('/api/generate',{
+    method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({model,prompt,stream:true})
+  });
+  const reader=r.body.getReader();const dec=new TextDecoder();
+  let tokens=0,first=true,ttft=0;
+  while(true){
+    const {done,value}=await reader.read();if(done)break;
+    const chunk=dec.decode(value);
+    for(const line of chunk.split('\n')){
+      if(!line.trim())continue;
+      try{
+        const d=JSON.parse(line);
+        if(first&&d.response){ttft=performance.now()-t0;first=false;}
+        if(d.response){out.textContent+=d.response;tokens++;}
+      }catch{}
+    }
+  }
+  const dur=performance.now()-t0;
+  const tokS=tokens/(dur/1000);
+  met.innerHTML=`TTFT: <b>${ttft.toFixed(0)}ms</b> | ${tokens} tokens | <b>${tokS.toFixed(1)} tok/s</b> | ${dur.toFixed(0)}ms total`;
+}
+
+async function loadLogs(){
+  const r=await fetch(`${API}/logs?count=50`);const lines=await r.json();
+  const div=document.getElementById('l-body');
+  div.innerHTML=lines.map(l=>{
+    const m=l.match(/^\[([^\]]+)\] \[([^\]]+)\] (.*)$/);
+    if(!m)return`<div class="log-line">${esc(l)}</div>`;
+    const lvl=m[2];
+    return`<div class="log-line log-${lvl}">${esc(l)}</div>`;
+  }).join('');
+  div.scrollTop=div.scrollHeight;
+}
+
+async function loadMetrics(){
+  const r=await fetch(`${API}/metrics?count=30`);const lines=await r.json();
+  document.getElementById('mt-body').innerHTML=lines.map(l=>{
+    const p=l.split(',');
+    return`<tr><td>${p[0]?.slice(11,19)||'-'}</td><td>${p[1]||'-'}</td><td>${p[2]||'-'}</td><td>${p[3]||'-'}</td><td>${p[4]||'-'}</td><td>${p[5]||'-'}</td><td>${p[6]||'-'}</td><td>${p[7]||'-'}</td><td>${p[8]||'-'}</td></tr>`;
+  }).join('');
+}
+
+async function loadConfig(){
+  const r=await fetch(`${API}/config`);const json=await r.text();
+  document.getElementById('c-json').value=json;
+}
+
+async function saveConfig(){
+  const json=document.getElementById('c-json').value;
+  const r=await fetch(`${API}/config`,{method:'POST',headers:{'Content-Type':'application/json'},body:json});
+  if(r.ok){
+    await fetch(`${API}/config/reload`,{method:'POST'});
+    document.getElementById('c-error').textContent='Saved & reloaded';
+    document.getElementById('c-error').style.color='#238636';
+  }else{
+    document.getElementById('c-error').textContent=await r.text();
+    document.getElementById('c-error').style.color='#f85149';
+  }
+}
+
+async function validateConfig(){
+  const json=document.getElementById('c-json').value;
+  const r=await fetch(`${API}/config/validate`,{method:'POST',headers:{'Content-Type':'application/json'},body:json});
+  const d=await r.json();
+  document.getElementById('c-error').textContent=d.valid?'Valid JSON':'Invalid: '+d.error;
+  document.getElementById('c-error').style.color=d.valid?'#238636':'#f85149';
+}
+
+function esc(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+
+// Init
+loadDash();
+refreshInterval=setInterval(loadDash,3000);
+</script>
+</body>
+</html>
