@@ -1,0 +1,183 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:vm="clr-namespace:Ollamock.App.ViewModels"
+             x:Class="Ollamock.App.MainPage"
+             Title="Ollamock"
+             BackgroundColor="{StaticResource Background}">
+
+    <Grid RowDefinitions="Auto,*">
+        <!-- Header -->
+        <Grid Grid.Row="0" BackgroundColor="{StaticResource Surface}" Padding="20,15">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+
+            <Label Grid.Column="0" Text="OLLAMOCK" FontSize="20" FontAttributes="Bold" TextColor="{StaticResource Primary}"/>
+
+            <HorizontalStackLayout Grid.Column="2" Spacing="15">
+                <Frame BackgroundColor="Transparent" BorderColor="{StaticResource Secondary}" Padding="10,5">
+                    <HorizontalStackLayout Spacing="5">
+                        <BoxView WidthRequest="8" HeightRequest="8" CornerRadius="4" Color="{Binding BridgeStatusColor}" VerticalOptions="Center"/>
+                        <Label Text="{Binding BridgeStatus}" FontSize="12" TextColor="{StaticResource TextSecondary}"/>
+                    </HorizontalStackLayout>
+                </Frame>
+                <Label Text="{Binding RamUsed, StringFormat='{0} MB'}" FontSize="12" TextColor="{StaticResource TextSecondary}" VerticalOptions="Center"/>
+            </HorizontalStackLayout>
+        </Grid>
+
+        <!-- Content -->
+        <ScrollView Grid.Row="1">
+            <VerticalStackLayout Padding="20" Spacing="20">
+
+                <!-- Status Cards -->
+                <Grid ColumnDefinitions="*,*,*,*" ColumnSpacing="15">
+                    <Frame Grid.Column="0" Padding="15">
+                        <VerticalStackLayout Spacing="5">
+                            <Label Text="BRIDGE" FontSize="10" TextColor="{StaticResource TextSecondary}"/>
+                            <Label Text="{Binding BridgeStatus}" FontSize="18" FontAttributes="Bold" TextColor="{Binding BridgeStatusColor}"/>
+                        </VerticalStackLayout>
+                    </Frame>
+                    <Frame Grid.Column="1" Padding="15">
+                        <VerticalStackLayout Spacing="5">
+                            <Label Text="ACTIVE MODEL" FontSize="10" TextColor="{StaticResource TextSecondary}"/>
+                            <Label Text="{Binding ActiveModel}" FontSize="18" FontAttributes="Bold"/>
+                        </VerticalStackLayout>
+                    </Frame>
+                    <Frame Grid.Column="2" Padding="15">
+                        <VerticalStackLayout Spacing="5">
+                            <Label Text="BACKENDS" FontSize="10" TextColor="{StaticResource TextSecondary}"/>
+                            <Label Text="{Binding BackendHealth}" FontSize="18" FontAttributes="Bold"/>
+                        </VerticalStackLayout>
+                    </Frame>
+                    <Frame Grid.Column="3" Padding="15">
+                        <VerticalStackLayout Spacing="5">
+                            <Label Text="RAM" FontSize="10" TextColor="{StaticResource TextSecondary}"/>
+                            <Label Text="{Binding RamUsed, StringFormat='{0} MB'}" FontSize="18" FontAttributes="Bold"/>
+                        </VerticalStackLayout>
+                    </Frame>
+                </Grid>
+
+                <!-- Launchers -->
+                <Frame Padding="15">
+                    <VerticalStackLayout Spacing="10">
+                        <Label Text="Launchers" FontSize="16" FontAttributes="Bold"/>
+                        <CollectionView ItemsSource="{Binding Launchers}" HeightRequest="250">
+                            <CollectionView.ItemTemplate>
+                                <DataTemplate>
+                                    <Grid ColumnDefinitions="Auto,*,Auto,Auto,Auto" Padding="5" ColumnSpacing="10">
+                                        <!-- Status dot -->
+                                        <Ellipse Grid.Column="0" 
+                                                 WidthRequest="10" HeightRequest="10"
+                                                 Fill="{Binding installed, Converter={StaticResource BoolColorConverter}}"
+                                                 VerticalOptions="Center"/>
+
+                                        <!-- Info -->
+                                        <VerticalStackLayout Grid.Column="1">
+                                            <Label Text="{Binding displayName}" FontAttributes="Bold"/>
+                                            <Label Text="{Binding description}" FontSize="11" TextColor="{StaticResource TextSecondary}"/>
+                                            <Label Text="{Binding apiFormat, StringFormat='Format: {0}'}" FontSize="10" TextColor="{StaticResource TextSecondary}"/>
+                                        </VerticalStackLayout>
+
+                                        <!-- Version -->
+                                        <Label Grid.Column="2" 
+                                               Text="{Binding version}" 
+                                               FontSize="11" 
+                                               TextColor="{StaticResource TextSecondary}" 
+                                               VerticalOptions="Center"/>
+
+                                        <!-- Install button -->
+                                        <Button Grid.Column="3" 
+                                                Text="Install" 
+                                                FontSize="11" 
+                                                Padding="10,3"
+                                                Command="{Binding Source={RelativeSource AncestorType={x:Type vm:DashboardViewModel}}, Path=InstallToolCommand}"
+                                                CommandParameter="{Binding .}"
+                                                IsVisible="{Binding installed, Converter={StaticResource InvertedBoolConverter}}"
+                                                IsEnabled="{Binding canInstall}"/>
+
+                                        <!-- Launch/Configure buttons -->
+                                        <HorizontalStackLayout Grid.Column="4" Spacing="5" IsVisible="{Binding installed}">
+                                            <Button Text="Launch" 
+                                                    FontSize="11" 
+                                                    Padding="10,3"
+                                                    Command="{Binding Source={RelativeSource AncestorType={x:Type vm:DashboardViewModel}}, Path=LaunchToolCommand}"
+                                                    CommandParameter="{Binding .}"
+                                                    IsEnabled="{Binding running, Converter={StaticResource InvertedBoolConverter}}"/>
+                                            <Button Text="Config" 
+                                                    FontSize="11" 
+                                                    Padding="10,3"
+                                                    Command="{Binding Source={RelativeSource AncestorType={x:Type vm:DashboardViewModel}}, Path=ConfigureToolCommand}"
+                                                    CommandParameter="{Binding .}"/>
+                                        </HorizontalStackLayout>
+                                    </Grid>
+                                </DataTemplate>
+                            </CollectionView.ItemTemplate>
+                        </CollectionView>
+                    </VerticalStackLayout>
+                </Frame>
+
+                <!-- Models -->
+                <Frame Padding="15">
+                    <VerticalStackLayout Spacing="10">
+                        <Label Text="Models" FontSize="16" FontAttributes="Bold"/>
+                        <CollectionView ItemsSource="{Binding Models}">
+                            <CollectionView.ItemTemplate>
+                                <DataTemplate>
+                                    <Grid ColumnDefinitions="*,Auto,Auto,Auto,Auto" Padding="5" ColumnSpacing="10">
+                                        <VerticalStackLayout Grid.Column="0">
+                                            <Label Text="{Binding name}" FontAttributes="Bold"/>
+                                            <Label Text="{Binding provider}" FontSize="11" TextColor="{StaticResource TextSecondary}"/>
+                                        </VerticalStackLayout>
+                                        <Label Grid.Column="1" Text="{Binding device}" FontSize="11" TextColor="{StaticResource TextSecondary}" VerticalOptions="Center"/>
+                                        <Frame Grid.Column="2" BackgroundColor="Transparent" BorderColor="{StaticResource Secondary}" Padding="5,2">
+                                            <HorizontalStackLayout Spacing="3">
+                                                <BoxView WidthRequest="6" HeightRequest="6" CornerRadius="3" Color="{Binding status, Converter={StaticResource StatusColorConverter}}" VerticalOptions="Center"/>
+                                                <Label Text="{Binding status}" FontSize="10"/>
+                                            </HorizontalStackLayout>
+                                        </Frame>
+                                        <Label Grid.Column="3" Text="{Binding ramUsed, StringFormat='{0} MB'}" FontSize="11" TextColor="{StaticResource TextSecondary}" VerticalOptions="Center"/>
+                                        <Button Grid.Column="4" Text="{Binding status, StringFormat='{0:Stop;Start}'}" FontSize="11" Padding="10,3"
+                                                Command="{Binding Source={RelativeSource AncestorType={x:Type vm:DashboardViewModel}}, Path=ToggleModelCommand}"
+                                                CommandParameter="{Binding .}"/>
+                                    </Grid>
+                                </DataTemplate>
+                            </CollectionView.ItemTemplate>
+                        </CollectionView>
+                    </VerticalStackLayout>
+                </Frame>
+
+                <!-- Backends -->
+                <Frame Padding="15">
+                    <VerticalStackLayout Spacing="10">
+                        <Label Text="Backends" FontSize="16" FontAttributes="Bold"/>
+                        <CollectionView ItemsSource="{Binding Backends}">
+                            <CollectionView.ItemTemplate>
+                                <DataTemplate>
+                                    <Grid ColumnDefinitions="*,Auto,Auto,Auto,Auto" Padding="5" ColumnSpacing="10">
+                                        <VerticalStackLayout Grid.Column="0">
+                                            <Label Text="{Binding id}" FontAttributes="Bold"/>
+                                            <Label Text="{Binding type}" FontSize="11" TextColor="{StaticResource TextSecondary}"/>
+                                        </VerticalStackLayout>
+                                        <Label Grid.Column="1" Text="{Binding port}" FontSize="11" TextColor="{StaticResource TextSecondary}" VerticalOptions="Center"/>
+                                        <Label Grid.Column="2" Text="{Binding runtimeVersion}" FontSize="10" TextColor="{StaticResource TextSecondary}" VerticalOptions="Center"/>
+                                        <Frame Grid.Column="3" BackgroundColor="Transparent" BorderColor="{StaticResource Secondary}" Padding="5,2">
+                                            <HorizontalStackLayout Spacing="3">
+                                                <BoxView WidthRequest="6" HeightRequest="6" CornerRadius="3" Color="{Binding running, Converter={StaticResource BoolColorConverter}}" VerticalOptions="Center"/>
+                                                <Label Text="{Binding running, StringFormat='{0:Running;Stopped}'}" FontSize="10"/>
+                                            </HorizontalStackLayout>
+                                        </Frame>
+                                        <Label Grid.Column="4" Text="{Binding restartCount, StringFormat='{0} restarts'}" FontSize="10" TextColor="{StaticResource TextSecondary}" VerticalOptions="Center"/>
+                                    </Grid>
+                                </DataTemplate>
+                            </CollectionView.ItemTemplate>
+                        </CollectionView>
+                    </VerticalStackLayout>
+                </Frame>
+
+            </VerticalStackLayout>
+        </ScrollView>
+    </Grid>
+</ContentPage>

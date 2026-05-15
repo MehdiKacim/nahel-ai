@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<Application xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="Ollamock.App.App">
+    <Application.Resources>
+        <ResourceDictionary>
+            <Color x:Key="Primary">#238636</Color>
+            <Color x:Key="Secondary">#30363d</Color>
+            <Color x:Key="Background">#0d1117</Color>
+            <Color x:Key="Surface">#161b22</Color>
+            <Color x:Key="TextPrimary">#c9d1d9</Color>
+            <Color x:Key="TextSecondary">#8b949e</Color>
+            <Color x:Key="Success">#238636</Color>
+            <Color x:Key="Warning">#d29922</Color>
+            <Color x:Key="Danger">#f85149</Color>
+            <Style TargetType="Label">
+                <Setter Property="TextColor" Value="{StaticResource TextPrimary}" />
+            </Style>
+            <Style TargetType="Button">
+                <Setter Property="BackgroundColor" Value="{StaticResource Primary}" />
+                <Setter Property="TextColor" Value="White" />
+                <Setter Property="CornerRadius" Value="6" />
+            </Style>
+            <Style TargetType="Frame">
+                <Setter Property="BackgroundColor" Value="{StaticResource Surface}" />
+                <Setter Property="BorderColor" Value="{StaticResource Secondary}" />
+                <Setter Property="CornerRadius" Value="8" />
+            </Style>
+            <converters:InvertedBoolConverter x:Key="InvertedBoolConverter" />
+            <converters:StatusColorConverter x:Key="StatusColorConverter" />
+        </ResourceDictionary>
+    </Application.Resources>
+</Application>

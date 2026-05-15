@@ -1,103 +1,109 @@
-# OllamaBridge
+# Ollamock
 
-Bridge Windows Service qui remplace Ollama sur :11434.
-Ollama natif deplace sur :11436.
+> Ollamock is an Ollama-compatible runtime gateway and local AI launcher.
 
 ## Architecture
 
 ```
-Client -> :11434 Bridge -> OpenVINO backends (:808x) ou Ollama natif (:11436)
-              |
-              +-> /admin Cockpit web
+┌─────────────────┐     ┌──────────────────┐     ┌─────────────────┐
+│   Shells IA     │────▶│   Ollamock       │────▶│   Runtimes      │
+│  (Codex/Claude) │     │  Gateway + Tray  │     │ (OpenVINO/etc)  │
+└─────────────────┘     └──────────────────┘     └─────────────────┘
+                               │
+                               ▼
+                        ┌──────────────────┐
+                        │   Ollamock.App   │
+                        │  (MAUI Tray)     │
+                        └──────────────────┘
 ```
+
+## Projects
+
+| Project | Role |
+|---------|------|
+| `Ollamock.Service` | Windows Service - API gateway, backend launcher, observability |
+| `Ollamock.App` | MAUI Desktop App - Tray icon, dashboard, launchers |
 
 ## Quick Start
 
 ```powershell
-# 1. Deplacer Ollama natif
-[Environment]::SetEnvironmentVariable("OLLAMA_HOST", "http://localhost:11436", "User")
-# Redemarrer Ollama
+# Build
+.\scripts\build.ps1
 
-# 2. Build
-dotnet publish -c Release -r win-x64 --self-contained -o .\publish
-
-# 3. Install
-.\install-service.ps1 -InstallPath "C:\Tools\ollama-bridge"
-
-# 4. Configurer
-# Editer C:\Tools\ollama-bridgeppsettings.json
-# - Chemins executables OpenVINO
-# - Chemins modeles GGUF
-# - Ports si deja occupes
-
-# 5. Redemarrer service si config changee
-Restart-Service OllamaOpenVINOBridge
+# Install
+.\scripts\install.ps1 -InstallPath "C:\Tools\ollamock"
 ```
 
-## Usage
+## Supported Tools (Launchers)
 
-```bash
-# LLM
-curl http://localhost:11434/api/generate -d '{"model":"ov-llama3.1","prompt":"Hello"}'
+| Tool | Type | API Format | Auto-Install |
+|------|------|-----------|-------------|
+| Claude Code | CLI | Anthropic | ✅ npm |
+| Codex CLI | CLI | OpenAI | ✅ npm |
+| OpenCode | CLI | Generic | ✅ curl |
+| Droid | CLI | Generic | ✅ npm |
+| Cline | VS Code ext | OpenAI | ❌ Manual |
+| OpenWebUI | Web | OpenAI | ✅ pip/docker |
+| AnythingLLM | Desktop | OpenAI | ❌ Download |
 
-# Vision
-curl http://localhost:11434/api/generate -d '{"model":"ov-llava","prompt":"Decris","images":["base64..."]}'
+## Tray Menu
 
-# Embedding
-curl http://localhost:11434/api/embed -d '{"model":"ov-embed","input":"texte"}'
+- 🟢 Bridge Running / 🟡 Backend Warming / 🔴 Backend Down
+- Open Ollamock
+- Launch Codex / Claude
+- Start/Stop Bridge
+- Restart Backends
+- Open Logs
+- Settings
+- Quit Ollamock
 
-# OpenAI-compatible
-curl http://localhost:11434/v1/chat/completions -d '{"model":"ov-llama3.1","messages":[{"role":"user","content":"Hello"}]}'
+## Dashboard
 
-# Fallback Ollama natif
-curl http://localhost:11434/api/generate -d '{"model":"llama3.2","prompt":"Hello"}'
+- **Home**: Bridge status, active model, backends health, RAM
+- **Launchers**: Detect, install, configure, launch tools
+- **Models**: Start/stop, device (CPU/GPU/NPU), RAM usage
+- **Backends**: Port, type, runtime version, restart count
+- **Logs**: Live stream
+- **Settings**: Config JSON editor
 
-# Cockpit
-start http://localhost:11434/admin
-```
+## API Compatibility
+
+### OpenAI
+- `GET /v1/models`
+- `POST /v1/chat/completions`
+- `POST /v1/embeddings`
+
+### Anthropic
+- `POST /v1/messages`
+
+### Ollama
+- `GET /api/tags`
+- `POST /api/generate`
+- `POST /api/chat`
+- `POST /api/embed`
+- `GET /api/version`
 
 ## Config
 
-| Section | Role |
-|---------|------|
-| Bridge | Port ecoute, fallback, retention |
-| Backends | Executables, args, ports, env vars, runtime version |
-| Models | Mapping nom -> backend + chemin + device policy |
-
-Variables args: `{modelPath}`, `{mmprojPath}`, `{port}`, `{contextSize}`, `{device}`, `{fallbackDevice}`
-
-## Logs
-
-- Ring buffer memoire (cockpit live)
-- Fichier rotation: `logs/bridge-YYYYMMDD.log`
-
-## Metrics
-
-- CSV append: `metrics/metrics.csv`
-- Header: `timestamp,req_id,model,backend,device,ttft_ms,tok_s,ram_mb,duration_ms`
-
-## Endpoints Admin
-
-```
-GET  /admin/status
-GET  /admin/models
-POST /admin/models/{id}/test
-POST /admin/models/{id}/toggle
-GET  /admin/backends
-POST /admin/backends/{id}/start|stop|restart
-GET  /admin/logs
-GET  /admin/logs/file
-GET  /admin/metrics
-GET  /admin/metrics/summary
-GET  /admin/config
-POST /admin/config
-POST /admin/config/validate
-POST /admin/config/reload
+```json
+{
+  "Providers": {
+    "llm-openvino": {
+      "Executable": "C:\Tools\llama-openvino\llama-server.exe",
+      "Port": 8080
+    }
+  },
+  "Models": {
+    "ov-llama3.1": {
+      "ProviderId": "llm-openvino",
+      "ModelPath": "C:\Models\llama-3.1-8b.gguf",
+      "Device": "NPU",
+      "FallbackDevice": "GPU"
+    }
+  }
+}
 ```
 
-## Desinstall
+## License
 
-```powershell
-Stop-Service OllamaOpenVINOBridge
-sc.exe delete OllamaOpenVINOBridge
-```
+MIT
