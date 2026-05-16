@@ -1,65 +1,41 @@
 # install.ps1
 param(
-    [string]$InstallPath = "C:\Tools\ollamock"
+    [string]$InstallPath = "C:\Tools\nahel"
 )
 
-# Check if built
-$serviceExe = "publish/service/Ollamock.Service.exe"
-$appExe = "publish/app/Ollamock.App.exe"
+$cliExe = "publish/nahel/Nahel.Cli.exe"
 
-if (-not (Test-Path $serviceExe)) {
+# Build if needed
+if (-not (Test-Path $cliExe)) {
     Write-Host "Not built. Running build first..." -ForegroundColor Yellow
     .\scripts\build.ps1
 }
 
 # Create directories
-New-Item -ItemType Directory -Force -Path "$InstallPath/service" | Out-Null
-New-Item -ItemType Directory -Force -Path "$InstallPath/app" | Out-Null
+New-Item -ItemType Directory -Force -Path $InstallPath | Out-Null
 New-Item -ItemType Directory -Force -Path "$InstallPath/logs" | Out-Null
-New-Item -ItemType Directory -Force -Path "$InstallPath/metrics" | Out-Null
 New-Item -ItemType Directory -Force -Path "$InstallPath/backups" | Out-Null
 
-# Copy service
-Copy-Item "publish/service/*" "$InstallPath/service" -Recurse -Force
+# Copy CLI
+Copy-Item "publish/nahel/*" $InstallPath -Recurse -Force
 
-# Copy app
-Copy-Item "publish/app/*" "$InstallPath/app" -Recurse -Force
-
-# Install service
-$serviceName = "OllamockService"
-$servicePath = "$InstallPath/service/Ollamock.Service.exe"
-
-if (Get-Service $serviceName -ErrorAction SilentlyContinue) {
-    Stop-Service $serviceName -Force
-    sc.exe delete $serviceName
-    Start-Sleep 2
+# Add to user PATH if not present
+$currentPath = [Environment]::GetEnvironmentVariable("Path", "User")
+if (-not ($currentPath -split ";" | ForEach-Object { $_.Trim() } | Where-Object { $_ -eq $InstallPath })) {
+    [Environment]::SetEnvironmentVariable("Path", "$currentPath;$InstallPath", "User")
+    $env:Path += ";$InstallPath"
+    Write-Host "Added $InstallPath to user PATH" -ForegroundColor Yellow
 }
 
-New-Service -Name $serviceName `
-    -BinaryPathName "`"$servicePath`"" `
-    -DisplayName "Ollamock Service" `
-    -Description "Ollamock AI runtime gateway and launcher" `
-    -StartupType Automatic
+# Create default config if not exists
+$configPath = "$InstallPath/nahel.json"
+if (-not (Test-Path $configPath)) {
+    Copy-Item "src/Nahel.Cli/nahel.json" $configPath -Force
+    Write-Host "Created default config: $configPath" -ForegroundColor Yellow
+}
 
-Start-Service $serviceName
-
-# Create shortcut
-$WshShell = New-Object -comObject WScript.Shell
-$Shortcut = $WshShell.CreateShortcut("$env:APPDATA\Microsoft\Windows\Start Menu\Programs\Ollamock.lnk")
-$Shortcut.TargetPath = "$InstallPath/app/Ollamock.App.exe"
-$Shortcut.IconLocation = "$InstallPath/app/Ollamock.App.exe,0"
-$Shortcut.Save()
-
-# Create desktop shortcut
-$DesktopShortcut = $WshShell.CreateShortcut("$env:USERPROFILE\Desktop\Ollamock.lnk")
-$DesktopShortcut.TargetPath = "$InstallPath/app/Ollamock.App.exe"
-$DesktopShortcut.IconLocation = "$InstallPath/app/Ollamock.App.exe,0"
-$DesktopShortcut.Save()
-
-Write-Host "" 
-Write-Host "Ollamock installed!" -ForegroundColor Green
-Write-Host "Service: $serviceName (running)" -ForegroundColor Cyan
-Write-Host "App: $InstallPath/app/Ollamock.App.exe" -ForegroundColor Cyan
-Write-Host "API: http://localhost:11434" -ForegroundColor Cyan
-Write-Host "Admin: http://localhost:11434/admin" -ForegroundColor Cyan
-Write-Host "Tray: Right-click Ollamock icon in system tray" -ForegroundColor Cyan
+Write-Host ""
+Write-Host "Nahel installed!" -ForegroundColor Green
+Write-Host "Path: $InstallPath" -ForegroundColor Cyan
+Write-Host "Run: nahel start" -ForegroundColor Cyan
+Write-Host "Dashboard: http://localhost:11435/dashboard" -ForegroundColor Cyan

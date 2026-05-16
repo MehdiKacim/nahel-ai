@@ -3,22 +3,20 @@ param(
     [string]$Configuration = "Release"
 )
 
-Write-Host "Building Ollamock..." -ForegroundColor Cyan
+Write-Host "Building Nahel..." -ForegroundColor Cyan
 
-# Build Service
-Write-Host "Building Service..." -ForegroundColor Yellow
-dotnet publish Ollamock.Service/Ollamock.Service.csproj `
+# Build solution
+Write-Host "Building solution..." -ForegroundColor Yellow
+dotnet build Nahel.sln -c $Configuration
+if ($LASTEXITCODE -ne 0) {
+    Write-Host "Build failed." -ForegroundColor Red
+    exit $LASTEXITCODE
+}
+
+# Publish CLI
+Write-Host "Publishing CLI..." -ForegroundColor Yellow
+dotnet publish src/Nahel.Cli/Nahel.Cli.csproj `
     -c $Configuration `
-    -r win-x64 `
-    --self-contained `
-    -o publish/service
+    -o publish/nahel
 
-# Build App
-Write-Host "Building App..." -ForegroundColor Yellow
-dotnet publish Ollamock.App/Ollamock.App.csproj `
-    -c $Configuration `
-    -r win-x64 `
-    --self-contained `
-    -o publish/app
-
-Write-Host "Build complete. Output in publish/" -ForegroundColor Green
+Write-Host "Build complete. Output in publish/nahel" -ForegroundColor Green
