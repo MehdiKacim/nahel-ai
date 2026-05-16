@@ -48,6 +48,8 @@ public static class NahelServerBuilder
                     ExecutablePath = engineCfg.ExecutablePath,
                     WorkingDirectory = engineCfg.WorkingDirectory,
                     ConfigPath = engineCfg.ConfigPath,
+                    ModelName = engineCfg.ModelName,
+                    ModelPath = engineCfg.ModelPath,
                     RestPort = engineCfg.RestPort,
                     GrpcPort = engineCfg.GrpcPort,
                     OpenAiProxyPort = engineCfg.OpenAiProxyPort,

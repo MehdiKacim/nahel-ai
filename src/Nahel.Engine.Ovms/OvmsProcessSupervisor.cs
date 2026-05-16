@@ -57,6 +57,13 @@ public sealed class OvmsProcessSupervisor : IDisposable
             startInfo.ArgumentList.Add("--config_path");
             startInfo.ArgumentList.Add(options.ConfigPath);
         }
+        else if (!string.IsNullOrEmpty(options.ModelName) && !string.IsNullOrEmpty(options.ModelPath))
+        {
+            startInfo.ArgumentList.Add("--model_name");
+            startInfo.ArgumentList.Add(options.ModelName);
+            startInfo.ArgumentList.Add("--model_path");
+            startInfo.ArgumentList.Add(options.ModelPath);
+        }
 
         if (options.RestPort > 0)
         {
@@ -66,13 +73,36 @@ public sealed class OvmsProcessSupervisor : IDisposable
 
         if (options.GrpcPort > 0)
         {
-            startInfo.ArgumentList.Add("--grpc_port");
+            startInfo.ArgumentList.Add("--port");
             startInfo.ArgumentList.Add(options.GrpcPort.ToString());
         }
 
         foreach (var env in options.EnvironmentVariables)
         {
             startInfo.EnvironmentVariables[env.Key] = env.Value;
+        }
+
+        // Ensure OVMS directory is on PATH so DLLs are found
+        var exeDir = Path.GetDirectoryName(Path.GetFullPath(options.ExecutablePath));
+        if (!string.IsNullOrEmpty(exeDir))
+        {
+            startInfo.EnvironmentVariables["OVMS_DIR"] = exeDir;
+            var currentPath = startInfo.EnvironmentVariables["PATH"] ?? "";
+            if (!currentPath.Split(';').Any(p => p.Trim().Equals(exeDir, StringComparison.OrdinalIgnoreCase)))
+            {
+                startInfo.EnvironmentVariables["PATH"] = $"{exeDir};{currentPath}";
+            }
+            var pythonDir = Path.Combine(exeDir, "python");
+            if (Directory.Exists(pythonDir))
+            {
+                startInfo.EnvironmentVariables["PYTHONHOME"] = pythonDir;
+                var scriptsDir = Path.Combine(pythonDir, "Scripts");
+                if (Directory.Exists(scriptsDir))
+                {
+                    startInfo.EnvironmentVariables["PATH"] = $"{scriptsDir};{startInfo.EnvironmentVariables["PATH"]}";
+                }
+                startInfo.EnvironmentVariables["PATH"] = $"{pythonDir};{startInfo.EnvironmentVariables["PATH"]}";
+            }
         }
 
         var process = new Process { StartInfo = startInfo };

@@ -25,6 +25,13 @@ public sealed class NahelBootstrapService : IHostedService
         var modelRouter = _services.GetRequiredService<IModelRouter>();
         var runtime = _services.GetRequiredService<IEngineRuntime>();
 
+        // Register all engines from DI into catalog
+        foreach (var engine in _services.GetServices<Nahel.SDK.Abstractions.IEngine>())
+        {
+            catalog.RegisterEngine(engine);
+            _logger.LogInformation("Registered engine '{EngineId}' in catalog.", engine.EngineId);
+        }
+
         // Register models from config
         var modelsSection = _configuration.GetSection("Models");
         foreach (var modelEntry in modelsSection.GetChildren())

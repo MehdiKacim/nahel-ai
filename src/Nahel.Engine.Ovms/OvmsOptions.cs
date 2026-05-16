@@ -7,6 +7,8 @@ public sealed record OvmsOptions
     public string ExecutablePath { get; init; } = "";
     public string WorkingDirectory { get; init; } = "";
     public string ConfigPath { get; init; } = "";
+    public string? ModelName { get; init; }
+    public string? ModelPath { get; init; }
     public int RestPort { get; init; } = 8000;
     public int GrpcPort { get; init; } = 9000;
     public int OpenAiProxyPort { get; init; } = 8080;
