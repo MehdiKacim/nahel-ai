@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <RootNamespace>Nahel.Server</RootNamespace>
+    <OutputType>Library</OutputType>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Nahel.SDK\Nahel.SDK.csproj" />
+    <ProjectReference Include="..\Nahel.Ollamock.System\Nahel.Ollamock.System.csproj" />
+    <ProjectReference Include="..\Nahel.Engine.Ovms\Nahel.Engine.Ovms.csproj" />
+  </ItemGroup>
+
+</Project>
