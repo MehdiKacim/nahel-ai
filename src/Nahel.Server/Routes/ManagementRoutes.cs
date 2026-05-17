@@ -125,6 +125,7 @@ public static class ManagementRoutes
             if (openAiBackend == null)
                 return Results.BadRequest(new { error = "Backend does not support OpenAI-compatible benchmarking." });
 
+            var maxTokens = request.MaxTokens ?? 64;
             var prompt = new Nahel.SDK.Models.OpenAiChatCompletionRequest(
                 Model: request.ModelId,
                 Messages: new List<Nahel.SDK.Models.OpenAiChatMessage>
@@ -132,7 +133,7 @@ public static class ManagementRoutes
                     new("system", "You are a helpful assistant."),
                     new("user", "What is the capital of France?")
                 },
-                MaxTokens: 64,
+                MaxTokens: maxTokens,
                 Temperature: 0.7
             );
 
@@ -143,13 +144,16 @@ public static class ManagementRoutes
                 sw.Stop();
                 var choice = response.Choices?.FirstOrDefault();
                 var text = (choice?.Message as Nahel.SDK.Models.OpenAiChatMessage)?.Content?.ToString() ?? "";
-                var tokens = response.Usage?.TotalTokens ?? 0;
+                var completionTokens = response.Usage?.CompletionTokens ?? 0;
+                var totalTokens = response.Usage?.TotalTokens ?? 0;
+                var durationSec = sw.ElapsedMilliseconds / 1000.0;
                 return Results.Ok(new
                 {
                     model = request.ModelId,
                     duration_ms = sw.ElapsedMilliseconds,
-                    tokens_generated = tokens,
-                    tokens_per_second = tokens / (sw.ElapsedMilliseconds / 1000.0),
+                    completion_tokens = completionTokens,
+                    total_tokens = totalTokens,
+                    tokens_per_second = durationSec > 0 ? Math.Round(completionTokens / durationSec, 2) : 0,
                     preview = text.Length > 200 ? text[..200] : text
                 });
             }

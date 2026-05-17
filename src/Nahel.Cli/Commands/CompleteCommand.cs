@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Text;
 using System.Text.Json;
 
@@ -37,7 +38,10 @@ public sealed class CompleteCommand : ICommand
         });
 
         using var content = new StringContent(json, Encoding.UTF8, "application/json");
+        var sw = Stopwatch.StartNew();
         var response = await http.PostAsync("http://127.0.0.1:11435/v1/chat/completions", content);
+        sw.Stop();
+
         if (!response.IsSuccessStatusCode)
         {
             Console.WriteLine($"Request failed: HTTP {(int)response.StatusCode}");
@@ -52,11 +56,28 @@ public sealed class CompleteCommand : ICommand
             if (first.TryGetProperty("message", out var msg) && msg.TryGetProperty("content", out var contentProp))
             {
                 Console.WriteLine(contentProp.GetString());
-                return 0;
             }
         }
 
-        Console.WriteLine("No response content.");
-        return 1;
+        int completionTokens = 0;
+        int totalTokens = 0;
+        if (doc.RootElement.TryGetProperty("usage", out var usage))
+        {
+            if (usage.TryGetProperty("completion_tokens", out var ct))
+                completionTokens = ct.GetInt32();
+            if (usage.TryGetProperty("total_tokens", out var tt))
+                totalTokens = tt.GetInt32();
+        }
+
+        var durationMs = sw.ElapsedMilliseconds;
+        var tps = durationMs > 0 ? completionTokens / (durationMs / 1000.0) : 0;
+
+        Console.WriteLine();
+        Console.WriteLine($"  Duration          {durationMs} ms");
+        Console.WriteLine($"  Completion tokens {completionTokens}");
+        Console.WriteLine($"  Total tokens      {totalTokens}");
+        Console.WriteLine($"  End-to-end speed  {tps:F2} tok/s");
+
+        return 0;
     }
 }

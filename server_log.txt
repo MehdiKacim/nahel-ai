@@ -1,0 +1,72 @@
+Nahel running on http://127.0.0.1:11435
+Dashboard: http://127.0.0.1:11435/dashboard
+info: Nahel.Server.Services.NahelBootstrapService[0]
+      Nahel bootstrap starting...
+info: Nahel.Server.Services.NahelBootstrapService[0]
+      Using declarative backend configuration.
+info: Nahel.Server.Services.NahelBootstrapService[0]
+      Registered backend 'ovgenai-main'
+info: Nahel.Server.Services.NahelBootstrapService[0]
+      Auto-starting backend 'ovgenai-main'...
+info: Nahel.Engine.OVGenAI.OVGenAIProcessSupervisor[0]
+      OVGenAI backend started on port 8100 for model 'mistral-7b' using engine 'ov_genai'.
+fail: Nahel.Engine.OVGenAI.OVGenAIProcessSupervisor[0]
+      [OVGenAI] [transformers] PyTorch was not found. Models won't be available and only tokenizers, configuration and file/data utilities can be used.
+info: Nahel.Server.Services.NahelBootstrapService[0]
+      Backend 'ovgenai-main' started.
+info: Nahel.Server.Services.NahelBootstrapService[0]
+      Registered model 'mistral-7b' -> backend 'ovgenai-main'
+info: Nahel.Server.Services.NahelBootstrapService[0]
+      Nahel bootstrap complete.
+info: Microsoft.Hosting.Lifetime[14]
+      Now listening on: http://127.0.0.1:11435
+info: Microsoft.Hosting.Lifetime[0]
+      Application started. Press Ctrl+C to shut down.
+info: Microsoft.Hosting.Lifetime[0]
+      Hosting environment: Production
+info: Microsoft.Hosting.Lifetime[0]
+      Content root path: C:\Users\mehdi\Documents\Labo\nahel\build
+fail: Nahel.Engine.OVGenAI.OVGenAIProcessSupervisor[0]
+      [OVGenAI] ERROR:    [Errno 10048] error while attempting to bind on address ('127.0.0.1', 8100): une seule utilisation de chaque adresse de socket (protocole/adresse réseau/port) est habituellement autorisée
+info: Nahel.Engine.OVGenAI.OVGenAIProcessSupervisor[0]
+      [OVGenAI] [OVGenAI Bridge] Engine=ov_genai, model=C:\Users\mehdi\Documents\Labo\nahel\build\models\mistral-7b, device=GPU
+info: Nahel.Engine.OVGenAI.OVGenAIProcessSupervisor[0]
+      [OVGenAI] [OVGenAI Bridge] Model 'mistral-7b' ready on port 8100.
+info: Microsoft.AspNetCore.Hosting.Diagnostics[1]
+      Request starting HTTP/1.1 POST http://127.0.0.1:11435/v1/chat/completions - application/json;+charset=utf-8 216
+info: Microsoft.AspNetCore.Routing.EndpointMiddleware[0]
+      Executing endpoint 'HTTP: POST /v1/chat/completions'
+info: Microsoft.AspNetCore.Http.Result.PushStreamResult[5]
+      Sending file with download name ''.
+info: System.Net.Http.HttpClient.Default.LogicalHandler[100]
+      Start processing HTTP request POST http://127.0.0.1:8100/v1/chat/completions
+info: System.Net.Http.HttpClient.Default.ClientHandler[100]
+      Sending HTTP request POST http://127.0.0.1:8100/v1/chat/completions
+info: System.Net.Http.HttpClient.Default.ClientHandler[101]
+      Received HTTP response headers after 28.4573ms - 200
+info: System.Net.Http.HttpClient.Default.LogicalHandler[101]
+      End processing HTTP request after 33.0016ms - 200
+info: Microsoft.AspNetCore.Routing.EndpointMiddleware[1]
+      Executed endpoint 'HTTP: POST /v1/chat/completions'
+info: Microsoft.AspNetCore.Hosting.Diagnostics[2]
+      Request finished HTTP/1.1 POST http://127.0.0.1:11435/v1/chat/completions - 200 - text/event-stream 2577.7281ms
+info: Microsoft.AspNetCore.Hosting.Diagnostics[1]
+      Request starting HTTP/1.1 POST http://127.0.0.1:11435/bench - application/json;+charset=utf-8 -
+info: Microsoft.AspNetCore.Routing.EndpointMiddleware[0]
+      Executing endpoint 'HTTP: POST /bench'
+info: System.Net.Http.HttpClient.Default.LogicalHandler[100]
+      Start processing HTTP request POST http://127.0.0.1:8100/v1/chat/completions
+info: System.Net.Http.HttpClient.Default.ClientHandler[100]
+      Sending HTTP request POST http://127.0.0.1:8100/v1/chat/completions
+info: System.Net.Http.HttpClient.Default.ClientHandler[101]
+      Received HTTP response headers after 1131.7896ms - 200
+info: System.Net.Http.HttpClient.Default.LogicalHandler[101]
+      End processing HTTP request after 1131.8897ms - 200
+info: Microsoft.AspNetCore.Http.Result.OkObjectResult[1]
+      Setting HTTP status code 200.
+info: Microsoft.AspNetCore.Http.Result.OkObjectResult[3]
+      Writing value of type '<>f__AnonymousType8`6' as Json.
+info: Microsoft.AspNetCore.Routing.EndpointMiddleware[1]
+      Executed endpoint 'HTTP: POST /bench'
+info: Microsoft.AspNetCore.Hosting.Diagnostics[2]
+      Request finished HTTP/1.1 POST http://127.0.0.1:11435/bench - 200 - application/json;+charset=utf-8 1146.8859ms

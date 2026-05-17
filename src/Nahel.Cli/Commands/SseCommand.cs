@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Text;
 using System.Text.Json;
 
@@ -38,12 +39,20 @@ public sealed class SseCommand : ICommand
 
         using var content = new StringContent(json, Encoding.UTF8, "application/json");
         using var request = new HttpRequestMessage(HttpMethod.Post, "http://127.0.0.1:11435/v1/chat/completions") { Content = content };
+
+        var totalSw = Stopwatch.StartNew();
         using var response = await http.SendAsync(request, HttpCompletionOption.ResponseHeadersRead);
         if (!response.IsSuccessStatusCode)
         {
             Console.WriteLine($"Request failed: HTTP {(int)response.StatusCode}");
             return 1;
         }
+
+        var ttftSw = Stopwatch.StartNew();
+        long ttftMs = 0;
+        long generationMs = 0;
+        int charsGenerated = 0;
+        bool firstTokenReceived = false;
 
         using var stream = await response.Content.ReadAsStreamAsync();
         using var reader = new StreamReader(stream);
@@ -65,14 +74,41 @@ public sealed class SseCommand : ICommand
                     {
                         var text = contentProp.GetString();
                         if (!string.IsNullOrEmpty(text))
+                        {
+                            if (!firstTokenReceived)
+                            {
+                                ttftSw.Stop();
+                                ttftMs = ttftSw.ElapsedMilliseconds;
+                                firstTokenReceived = true;
+                            }
+                            charsGenerated += text.Length;
                             Console.Write(text);
+                        }
                     }
                 }
             }
             catch { /* ignore malformed chunks */ }
         }
 
+        totalSw.Stop();
+        var totalMs = totalSw.ElapsedMilliseconds;
+        generationMs = totalMs - ttftMs;
+        if (generationMs < 0) generationMs = 0;
+
+        var estimatedTokens = (int)Math.Ceiling(charsGenerated / 4.0);
+        var genTps = generationMs > 0 ? estimatedTokens / (generationMs / 1000.0) : 0;
+        var e2eTps = totalMs > 0 ? estimatedTokens / (totalMs / 1000.0) : 0;
+
         Console.WriteLine();
+        Console.WriteLine();
+        Console.WriteLine($"  TTFT                {ttftMs} ms");
+        Console.WriteLine($"  Generation duration {generationMs} ms");
+        Console.WriteLine($"  Total duration      {totalMs} ms");
+        Console.WriteLine($"  Chars generated     {charsGenerated}");
+        Console.WriteLine($"  Est. tokens         {estimatedTokens} (~4 chars/tok)");
+        Console.WriteLine($"  Generation speed    {genTps:F2} tok/s");
+        Console.WriteLine($"  End-to-end speed    {e2eTps:F2} tok/s");
+
         return 0;
     }
 }
