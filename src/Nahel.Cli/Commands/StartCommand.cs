@@ -1,3 +1,5 @@
+using System.Text.Json;
+using System.Text.Json.Serialization;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
@@ -47,7 +49,7 @@ public sealed class StartCommand : ICommand
         builder.Configuration.AddEnvironmentVariables(prefix: "NAHEL_");
 
         // Read host/port from config, allow CLI override
-        var hostOptions = builder.Configuration.GetSection("Nahel").Get<NahelHostOptions>() ?? new NahelHostOptions();
+        var hostOptions = builder.Configuration.GetSection("server").Get<NahelHostOptions>() ?? new NahelHostOptions();
         var host = cliHost ?? (lan ? "0.0.0.0" : hostOptions.Host);
         var port = cliPort ?? hostOptions.Port;
 
@@ -56,6 +58,12 @@ public sealed class StartCommand : ICommand
         builder.Logging.AddConsole();
         builder.Logging.SetMinimumLevel(LogLevel.Information);
         builder.Services.AddNahelServer(builder.Configuration);
+        builder.Services.ConfigureHttpJsonOptions(options =>
+        {
+            options.SerializerOptions.PropertyNamingPolicy = JsonNamingPolicy.SnakeCaseLower;
+            options.SerializerOptions.PropertyNameCaseInsensitive = true;
+            options.SerializerOptions.DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull;
+        });
 
         var app = builder.Build();
         app.UseRouting();
@@ -81,7 +89,7 @@ public sealed class StartCommand : ICommand
     {
         if (File.Exists(explicitPath)) return Path.GetFullPath(explicitPath);
 
-        var exeDir = Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location);
+        var exeDir = AppContext.BaseDirectory;
         if (!string.IsNullOrEmpty(exeDir))
         {
             var candidate = Path.Combine(exeDir, explicitPath);

@@ -15,12 +15,12 @@ public static class NahelServerBuilder
 {
     public static IServiceCollection AddNahelServer(this IServiceCollection services, IConfiguration configuration)
     {
-        services.AddSingleton<IEngineCatalog, EngineCatalog>();
-        services.AddSingleton<IEngineRuntime, EngineRuntime>();
-        services.AddSingleton<IEngineCommandQueue, EngineCommandQueue>();
-        services.AddHostedService(sp => (EngineCommandQueue)sp.GetRequiredService<IEngineCommandQueue>());
+        services.AddSingleton<IBackendCatalog, BackendCatalog>();
+        services.AddSingleton<IBackendRuntime, BackendRuntime>();
+        services.AddSingleton<IBackendCommandQueue, BackendCommandQueue>();
+        services.AddHostedService(sp => (BackendCommandQueue)sp.GetRequiredService<IBackendCommandQueue>());
         services.AddSingleton<IJobStore, InMemoryJobStore>();
-        services.AddSingleton<IEngineEventBus, EngineEventBus>();
+        services.AddSingleton<IBackendEventBus, BackendEventBus>();
         services.AddSingleton<IModelRouter, ModelRouter>();
         services.AddSingleton<IOpenAiRouter, OpenAiRouter>();
         services.AddHostedService<NahelBootstrapService>();
@@ -30,57 +30,8 @@ public static class NahelServerBuilder
         services.AddSingleton<ToolLauncherRegistry>();
         services.AddSingleton<IToolRegistry>(sp => sp.GetRequiredService<ToolLauncherRegistry>());
 
-        // Register engines from config
-        var enginesSection = configuration.GetSection("Engines");
-        foreach (var engineEntry in enginesSection.GetChildren())
-        {
-            var engineCfg = engineEntry.Get<EngineConfigEntry>();
-            if (engineCfg == null || !engineCfg.Enabled) continue;
-
-            var engineId = engineEntry.Key;
-
-            if (engineCfg.Type.Equals("ovms", StringComparison.OrdinalIgnoreCase))
-            {
-                var ovmsOptions = new OvmsOptions
-                {
-                    EngineId = engineId,
-                    DisplayName = engineCfg.DisplayName,
-                    ExecutablePath = engineCfg.ExecutablePath,
-                    WorkingDirectory = engineCfg.WorkingDirectory,
-                    ConfigPath = engineCfg.ConfigPath,
-                    ModelName = engineCfg.ModelName,
-                    ModelPath = engineCfg.ModelPath,
-                    RestPort = engineCfg.RestPort,
-                    GrpcPort = engineCfg.GrpcPort,
-                    OpenAiProxyPort = engineCfg.OpenAiProxyPort,
-                    OpenVinoVersion = engineCfg.OpenVinoVersion,
-                    VersionPolicy = engineCfg.VersionPolicy,
-                    EnvironmentVariables = engineCfg.EnvironmentVariables
-                };
-                services.AddSingleton(ovmsOptions);
-                services.AddSingleton<OvmsProcessSupervisor>();
-                services.AddHttpClient<OvmsHealthClient>();
-                services.AddSingleton<OvmsConfigWriter>();
-                services.AddSingleton<OvmsModelRegistry>();
-                services.AddSingleton<OvmsModelSwitcher>();
-                services.AddSingleton<OvmsVersionService>();
-                services.AddSingleton<OvmsEngine>();
-                services.AddSingleton<IEngine>(sp => sp.GetRequiredService<OvmsEngine>());
-            }
-            // Future engine types (llama.cpp, ollama, etc.) registered here
-        }
-
-        // Register models from config into IModelRegistry of each engine
-        var modelsSection = configuration.GetSection("Models");
-        foreach (var modelEntry in modelsSection.GetChildren())
-        {
-            var modelCfg = modelEntry.Get<ModelConfigEntry>();
-            if (modelCfg == null || !modelCfg.Enabled) continue;
-
-            // We can't inject IModelRegistry here at config-time easily,
-            // so models are registered at runtime by NahelBootstrapService via ModelRouter.
-            // Engine-specific registries will be populated on first use.
-        }
+        // Common infrastructure for backends
+        services.AddHttpClient();
 
         services.AddSignalR();
         return services;
@@ -97,6 +48,7 @@ public static class NahelServerBuilder
         app.MapNativeRoutes();
         app.MapOpenAiRoutes();
         app.MapOllamaRoutes();
+        app.MapManagementRoutes();
         app.MapHub<EngineHub>(Nahel.SDK.Routes.NahelRoutes.SignalREngineHub);
         return app;
     }

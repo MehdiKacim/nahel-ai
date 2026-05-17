@@ -11,7 +11,8 @@
   <ItemGroup>
     <ProjectReference Include="..\Nahel.SDK\Nahel.SDK.csproj" />
     <ProjectReference Include="..\Nahel.Ollamock.System\Nahel.Ollamock.System.csproj" />
-    <ProjectReference Include="..\Nahel.Engine.Ovms\Nahel.Engine.Ovms.csproj" />
+    <ProjectReference Include="..\..\backends\Nahel.Backend.OVMS\Nahel.Backend.OVMS.csproj" />
+    <ProjectReference Include="..\..\backends\Nahel.Backend.OVGenAI\Nahel.Backend.OVGenAI.csproj" />
   </ItemGroup>
 
 </Project>

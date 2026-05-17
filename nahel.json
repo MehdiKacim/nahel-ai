@@ -1,68 +1,8 @@
 {
-  "Nahel": {
-    "Host": "127.0.0.1",
-    "Port": 11435,
-    "DashboardEnabled": true,
-    "OpenAiCompatibilityEnabled": true,
-    "RequireApiKeyOnLan": true,
-    "ApiKey": "local",
-    "AllowUnauthenticatedLan": false
+  "server": {
+    "host": "127.0.0.1",
+    "port": 11435,
+    "apiKey": "local"
   },
-  "Engines": {
-    "ovms": {
-      "Type": "ovms",
-      "DisplayName": "OpenVINO Model Server",
-      "Enabled": true,
-      "AutoStartPolicy": "OnServerStart",
-      "ExecutablePath": "C:\\Tools\\ovms\\ovms\\ovms.exe",
-      "WorkingDirectory": "C:\\Tools\\ovms\\ovms",
-      "ConfigPath": "",
-      "ModelName": "TinyLlama",
-      "ModelPath": "C:\\Users\\mehdi\\Documents\\IA\\models\\OpenVINO\\TinyLlama-1.1B-Chat-v1.0-int4-ov",
-      "RestPort": 8000,
-      "GrpcPort": 9000,
-      "OpenAiProxyPort": 8080,
-      "OpenVinoVersion": "2026.1",
-      "VersionPolicy": "Official",
-      "EnvironmentVariables": {}
-    }
-  },
-  "Models": {
-    "tinyllama": {
-      "EngineId": "ovms",
-      "DisplayName": "TinyLlama 1.1B Chat",
-      "EngineModelName": "TinyLlama",
-      "ModelPath": "C:\\Users\\mehdi\\Documents\\IA\\models\\OpenVINO\\TinyLlama-1.1B-Chat-v1.0-int4-ov",
-      "ContextSize": 2048,
-      "LoadPolicy": "OnFirstRequest",
-      "UnloadPolicy": "AfterIdleTimeout",
-      "IdleTimeoutSeconds": 900,
-      "Preload": false,
-      "Enabled": true
-    }
-  },
-  "Tools": {
-    "codex": {
-      "Enabled": true,
-      "ExecutablePath": "codex",
-      "Arguments": "",
-      "WorkingDirectory": "",
-      "AutoStart": false,
-      "EnvironmentVariables": {
-        "OPENAI_BASE_URL": "http://127.0.0.1:11435/v1",
-        "OPENAI_API_KEY": "local"
-      }
-    },
-    "claude": {
-      "Enabled": true,
-      "ExecutablePath": "claude",
-      "Arguments": "",
-      "WorkingDirectory": "",
-      "AutoStart": false,
-      "EnvironmentVariables": {
-        "ANTHROPIC_BASE_URL": "http://127.0.0.1:11435",
-        "ANTHROPIC_API_KEY": "local"
-      }
-    }
-  }
+  "models": {}
 }

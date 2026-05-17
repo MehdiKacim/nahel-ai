@@ -11,19 +11,19 @@ public static class OpenAiRoutes
     {
         app.MapGet(NahelRoutes.OpenAiModels, (IModelRouter router) =>
             Results.Ok(new OpenAiModelListResponse("list", router.ListModels()
-                .Select(m => new OpenAiModelInfo(m.ModelId, "model", DateTimeOffset.UtcNow.ToUnixTimeSeconds(), m.EngineId))
+                .Select(m => new OpenAiModelInfo(m.ModelId, "model", DateTimeOffset.UtcNow.ToUnixTimeSeconds(), m.BackendId))
                 .ToList())));
 
         app.MapPost(NahelRoutes.OpenAiChatCompletions, async (OpenAiChatCompletionRequest request, IOpenAiRouter router, CancellationToken ct) =>
         {
-            if (request.Stream)
+            if (request.Stream == true)
             {
                 return Results.Stream(async stream =>
                 {
                     await using var writer = new StreamWriter(stream);
                     await foreach (var chunk in router.RouteStreamChatCompletionAsync(request, ct))
                     {
-                        await writer.WriteLineAsync($"data: {JsonSerializer.Serialize(chunk)}");
+                        await writer.WriteLineAsync($"data: {JsonSerializer.Serialize(chunk, OpenAiJsonOptions.Default)}");
                         await writer.FlushAsync();
                     }
                     await writer.WriteLineAsync("data: [DONE]");

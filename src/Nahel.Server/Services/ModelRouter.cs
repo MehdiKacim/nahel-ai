@@ -9,6 +9,9 @@ public sealed class ModelRouter : IModelRouter
     public void Register(string publicModelId, string engineId, string? engineModelName = null)
         => _map[publicModelId] = (engineId, engineModelName);
 
+    public bool Unregister(string publicModelId)
+        => _map.Remove(publicModelId);
+
     public (string engineId, string? engineModelName)? ResolveModel(string publicModelId)
         => _map.TryGetValue(publicModelId, out var v) ? v : null;
 

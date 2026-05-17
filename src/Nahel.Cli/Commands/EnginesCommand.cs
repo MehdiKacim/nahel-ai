@@ -2,9 +2,9 @@ namespace Nahel.Cli.Commands;
 
 public sealed class EnginesCommand : ICommand
 {
-    public Task<int> ExecuteAsync(string[] args)
+    public async Task<int> ExecuteAsync(string[] args)
     {
-        Console.WriteLine("Engines: use API GET /engine");
-        return Task.FromResult(0);
+        // Engines are now backends — delegate to status command
+        return await new StatusCommand().ExecuteAsync(args);
     }
 }

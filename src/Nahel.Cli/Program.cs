@@ -22,6 +22,15 @@ class Program
             "open" => await new OpenCommand().ExecuteAsync(remaining),
             "models" => await new ModelsCommand().ExecuteAsync(remaining),
             "engines" => await new EnginesCommand().ExecuteAsync(remaining),
+            "backends" => await new EnginesCommand().ExecuteAsync(remaining),
+            "bench" => await new BenchCommand().ExecuteAsync(remaining),
+            "metrics" => await new MetricsCommand().ExecuteAsync(remaining),
+            "run" => await new RunCommand().ExecuteAsync(remaining),
+            "chat" => await new ChatCommand().ExecuteAsync(remaining),
+            "complete" => await new CompleteCommand().ExecuteAsync(remaining),
+            "sse" => await new SseCommand().ExecuteAsync(remaining),
+            "list" => await new ModelsCommand().ExecuteAsync(new[] { "list" }),
+            "ps" => await new StatusCommand().ExecuteAsync(remaining),
             _ => await new DefaultCommand(command, remaining).ExecuteAsync(remaining)
         };
     }
@@ -41,13 +50,15 @@ class Program
               status      Show server status
               stop        Stop the running server (advises Ctrl+C)
               open        Open dashboard in browser
-              models      List models hint
-              engines     List engines hint
+              models      Manage models (list, add, download, switch, rm)
+              backends    List backends hint
+              bench       Run inference benchmark on a model
+              metrics     Show hardware / backend metrics
 
             Ollama-like commands:
               start <tool>    Start a tool (codex, claude, ...)
               run <model>     Run a model
-              stop <target>   Stop an engine or tool
+              stop <target>   Stop a backend or tool
               list            List models
               ps              List running processes
 
@@ -57,9 +68,13 @@ class Program
             Examples:
               nahel start
               nahel start --lan --port 8080
-              nahel start codex
-              nahel run tinyllama
+              nahel run <model>
+              nahel chat <model> "Hello"
+              nahel complete <model> "Hello"
+              nahel sse <model> "Hello"
               nahel status
+              nahel bench <model>
+              nahel metrics
             """);
     }
 }

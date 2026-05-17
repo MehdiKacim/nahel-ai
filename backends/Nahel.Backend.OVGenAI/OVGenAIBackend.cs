@@ -90,12 +90,32 @@ public sealed class OVGenAIBackend : IBackend, IOpenAiBackend
 
     public async Task<ModelSwitchResult> SwitchModelAsync(ModelSwitchRequest request, CancellationToken ct = default)
     {
+        var newPath = request.TargetEngineModelName ?? _options.ModelPath;
+        if (_options.ModelName == request.ModelId && _options.ModelPath == newPath && _supervisor.IsRunning)
+        {
+            _logger.LogInformation("Model '{ModelId}' is already loaded on backend '{EngineId}'. Skipping restart.", request.ModelId, EngineId);
+            return new ModelSwitchResult(true, null);
+        }
+
         _supervisor.Stop();
         _options.ModelName = request.ModelId;
-        _options.ModelPath = request.TargetEngineModelName ?? _options.ModelPath;
+        _options.ModelPath = newPath;
         var started = _supervisor.Start(_options);
-        await Task.Delay(2000, ct);
-        return new ModelSwitchResult(started, started ? null : "Failed to switch model.");
+        if (!started) return new ModelSwitchResult(false, "Failed to switch model.");
+
+        // Wait until backend is healthy (max 5 min)
+        _logger.LogInformation("Waiting for backend '{EngineId}' to become healthy after switch...", EngineId);
+        for (int i = 0; i < 300; i++)
+        {
+            await Task.Delay(1000, ct);
+            var health = await GetHealthAsync(ct);
+            if (health.Reachable)
+            {
+                _logger.LogInformation("Backend '{EngineId}' is healthy.", EngineId);
+                return new ModelSwitchResult(true, null);
+            }
+        }
+        return new ModelSwitchResult(false, "Backend did not become healthy within 5 minutes after switch.");
     }
 
     public async Task<OpenAiModelListResponse> ListOpenAiModelsAsync(CancellationToken ct = default)

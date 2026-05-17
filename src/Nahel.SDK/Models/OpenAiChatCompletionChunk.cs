@@ -1,2 +1,8 @@
 namespace Nahel.SDK.Models;
-public sealed record OpenAiChatCompletionChunk(string Id, string Object, long Created, string Model, IReadOnlyList<OpenAiChatChoice> Choices);
+
+public sealed record OpenAiChatCompletionChunk(
+    string? Id = null,
+    string? Object = null,
+    long? Created = null,
+    string? Model = null,
+    IReadOnlyList<OpenAiChatChoice>? Choices = null);

@@ -1,0 +1,20 @@
+{
+  "server": {
+    "host": "127.0.0.1",
+    "port": 11435,
+    "apiKey": "local"
+  },
+  "backends": {
+    "ovgenai-main": {
+      "type": "ovgenai",
+      "device": "GPU"
+    }
+  },
+  "models": {
+    "mistral-7b": {
+      "backend": "ovgenai-main",
+      "path": "models\\mistral-7b",
+      "repo_id": "OpenVINO/Mistral-7B-Instruct-v0.2-int4-ov"
+    }
+  }
+}

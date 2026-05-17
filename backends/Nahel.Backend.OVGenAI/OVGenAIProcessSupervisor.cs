@@ -37,7 +37,7 @@ public sealed class OVGenAIProcessSupervisor : IDisposable
         {
             FileName = pythonExe,
             Arguments = $"\"{bridgeScript}\" --engine {options.Engine} --model_path \"{options.ModelPath}\" --model_name \"{options.ModelName}\" --device {options.Device} --port {options.Port}",
-            WorkingDirectory = Path.GetDirectoryName(pythonExe) ?? ".",
+            WorkingDirectory = AppContext.BaseDirectory,
             UseShellExecute = false,
             CreateNoWindow = true,
             RedirectStandardOutput = true,
@@ -45,8 +45,8 @@ public sealed class OVGenAIProcessSupervisor : IDisposable
         };
 
         _process = new Process { StartInfo = psi, EnableRaisingEvents = true };
-        _process.OutputDataReceived += (_, e) => { if (!string.IsNullOrWhiteSpace(e.Data)) _logger.LogDebug("[OVGenAI stdout] {Line}", e.Data); };
-        _process.ErrorDataReceived += (_, e) => { if (!string.IsNullOrWhiteSpace(e.Data)) _logger.LogDebug("[OVGenAI stderr] {Line}", e.Data); };
+        _process.OutputDataReceived += (_, e) => { if (!string.IsNullOrWhiteSpace(e.Data)) _logger.LogInformation("[OVGenAI] {Line}", e.Data); };
+        _process.ErrorDataReceived += (_, e) => { if (!string.IsNullOrWhiteSpace(e.Data)) _logger.LogError("[OVGenAI] {Line}", e.Data); };
 
         try
         {
@@ -93,8 +93,7 @@ public sealed class OVGenAIProcessSupervisor : IDisposable
         var baseDir = AppContext.BaseDirectory;
         var candidates = new[]
         {
-            Path.Combine(baseDir, "backends", "ovgenai", "Scripts", "python.exe"),
-            Path.Combine(baseDir, "..", "..", "..", "..", "..", "build", "backends", "openarc", "Scripts", "python.exe"),
+            Path.Combine(baseDir, "backends", "ovgenai", "bin", "Scripts", "python.exe"),
         };
         foreach (var c in candidates) { var full = Path.GetFullPath(c); if (File.Exists(full)) return full; }
         return candidates[0];
@@ -105,9 +104,8 @@ public sealed class OVGenAIProcessSupervisor : IDisposable
         var baseDir = AppContext.BaseDirectory;
         var candidates = new[]
         {
-            Path.Combine(baseDir, "backends", "ovgenai", "bridge", "openarc_bridge.py"),
-            Path.Combine(baseDir, "..", "..", "..", "..", "..", "src", "Nahel.Engine.OVGenAI", "Bridge", "openarc_bridge.py"),
-            Path.Combine(baseDir, "..", "..", "..", "..", "src", "Nahel.Engine.OVGenAI", "Bridge", "openarc_bridge.py"),
+            Path.Combine(baseDir, "backends", "ovgenai", "bin", "bridge", "ovgenai_bridge.py"),
+            Path.Combine(baseDir, "..", "..", "..", "..", "..", "backends", "Nahel.Backend.OVGenAI", "Bridge", "ovgenai_bridge.py"),
         };
         foreach (var c in candidates) { var full = Path.GetFullPath(c); if (File.Exists(full)) return full; }
         return candidates[0];

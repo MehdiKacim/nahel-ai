@@ -1,6 +1,6 @@
-using Nahel.SDK.Models;
+﻿using Nahel.SDK.Models;
 namespace Nahel.SDK.Abstractions;
-public interface IOpenAiCompatibleEngine
+public interface IOpenAiBackend
 {
     Task<OpenAiModelListResponse> ListOpenAiModelsAsync(CancellationToken ct = default);
     Task<OpenAiChatCompletionResponse> CreateChatCompletionAsync(OpenAiChatCompletionRequest request, CancellationToken ct = default);
